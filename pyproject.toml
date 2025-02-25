@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "arghyam"
+version = "0.1.0"
+description = "This project is about extracting meter readings from the BFM images"
+authors = ["Suman Paul Choudhury"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pandas = "^2.2.3"
+opencv-python = "^4.11.0.86"
+scikit-learn = "^1.6.1"
+plotly = "^6.0.0"
+streamlit = "^1.42.2"
+watchdog = "^6.0.0"
+pillow = "^11.1.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

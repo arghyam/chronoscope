@@ -1,0 +1,19 @@
+.venv
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environments
+.env
+
+# Pytest
+.pytest_cache
+
+# VSCode
+.vscode
+
+.DS_Store
+
+#data files
+data/
+models/
