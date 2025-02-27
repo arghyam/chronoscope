@@ -42,7 +42,7 @@ def remove_duplicate_images(source_folder, destination_folder):
 
 if __name__ == "__main__":
     # Define source and destination folders
-    source_folder = "data/original_images"  # Change this to your source folder path
-    destination_folder = "data/refined_data"  # This will create refined_data inside data folder
+    source_folder = "data/original_images_2"  # Change this to your source folder path
+    destination_folder = "data/refined_data_2"  # This will create refined_data inside data folder
     
     remove_duplicate_images(source_folder, destination_folder)
