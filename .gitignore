@@ -17,5 +17,7 @@
 #data files
 data/
 models/
+output/
+
 
 *.csv

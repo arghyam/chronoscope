@@ -1,9 +1,15 @@
 # Arghyam-BFM-Reading
 Bulk Flow Meter reading extraction for Arghyam
 
+# Project Structure
+
+This project is organized into two main stages:
+1. Data Cleaning
+2. Model Training
+
 # Stage 1: Data Cleaning
 
-The first phase of the project is about data cleaning and removing duplicate images. This stage consists of two main steps:
+The first phase of the project is about data cleaning and preparing the dataset. This stage consists of several steps:
 
 ## 1. Duplicate Image Removal
 Script: `src/data_cleaning/0_remove_duplicate_images.py`
@@ -125,6 +131,158 @@ The script will output:
   - is_properly_oriented: 'Yes' or 'No' indicating orientation status
 - Progress updates during processing
 
-This comprehensive data cleaning pipeline ensures that the dataset is free from duplicates, contains only high-quality images, and provides insights into the distribution and orientation of the images for further processing.
+## 6. Image Orientation Correction
+Script: `src/data_cleaning/5_correcting_orientations.py`
+
+This script corrects the orientation of images identified as improperly oriented by the previous script.
+
+Features:
+- Automatic detection of image orientation using multiple methods
+- Correction of rotated images to proper orientation
+- Support for various rotation angles (90°, 180°, 270°)
+- Preservation of image quality during rotation
+
+Usage:
+```bash
+python src/data_cleaning/5_correcting_orientations.py --input_dir [input_directory] --output_dir [output_directory]
+```
+
+Parameters:
+- `--input_dir`: Directory containing images to correct
+- `--output_dir`: Directory where corrected images will be saved
+
+## 7. Annotation Cleaning
+Script: `src/data_cleaning/6_clean_annotations.py`
+
+This script cleans the annotations CSV file by removing entries for images that no longer exist in the dataset (e.g., after duplicate removal).
+
+Features:
+- Verification of image existence for each annotation
+- Removal of annotations for missing images
+- Generation of a cleaned annotations file
+
+Usage:
+```bash
+python src/data_cleaning/6_clean_annotations.py
+```
+
+The script will output:
+- Initial count of annotations
+- Number of missing images detected
+- Final count of valid annotations
+- Saves a new cleaned annotations file (`annotations_cleaned.csv`)
+
+## 8. Good Image Selection
+Script: `src/data_cleaning/7_copy_good_images.py`
+
+This script selects and copies only the images annotated as "Good" quality to a final dataset directory.
+
+Features:
+- Filters images based on quality annotations
+- Copies only high-quality images to the final dataset
+- Maintains original image quality during copying
+
+Usage:
+```bash
+python src/data_cleaning/7_copy_good_images.py
+```
+
+The script will:
+- Create a `data/final_data` directory
+- Copy all images annotated as "Good" to this directory
+- Report the total number of good images copied
+
+# Stage 2: Model Training
+
+The second phase of the project focuses on training a model to detect and read bulk flow meters.
+
+## 1. Meter Perspective Transform
+Script: `src/model_training/1_meter_perspective_transform.py`
+
+This script applies perspective transformation to straighten oriented bounding box regions in images, which is useful for normalizing meter displays before OCR.
+
+Features:
+- Straightens oriented bounding boxes using perspective transformation
+- Normalizes meter displays for better OCR results
+- Preserves aspect ratio of the meter region
+
+Usage:
+```bash
+python src/model_training/1_meter_perspective_transform.py
+```
+
+## 2. OCR with Mistral AI
+Script: `src/model_training/2_mistral_ocr.py`
+
+This script uses Gemini 2.0 Flash (via Google's Generative AI) to perform OCR on meter images and extract readings.
+
+Features:
+- Base64 encoding of images for API submission
+- Integration with Google's Generative AI
+- Extraction of meter readings from images
+- Error handling for API requests
+
+Usage:
+```bash
+python src/model_training/2_mistral_ocr.py
+```
+
+Requirements:
+- Google API key (set in .env file)
+- Internet connection for API access
+
+## 3. YOLO OBB Format Conversion
+Script: `src/model_training/3_convert_to_yolo_obb_format.py`
+
+This script converts annotations from XML format to YOLO OBB (Oriented Bounding Box) format for training object detection models.
+
+Features:
+- Parses XML annotations (CVAT format)
+- Converts to YOLO OBB format (class_id, x1, y1, x2, y2, x3, y3, x4, y4)
+- Creates a properly structured dataset for YOLO training
+- Handles both polygon and box annotations
+
+Usage:
+```bash
+python src/model_training/3_convert_to_yolo_obb_format.py
+```
+
+## 4. YOLO OBB Visualization
+Script: `src/model_training/4_visualise_yolo_obb.py`
+
+This script visualizes YOLO OBB annotations on images to verify correct conversion and annotation quality.
+
+Features:
+- Loads YOLO OBB annotations and converts to pixel coordinates
+- Visualizes oriented bounding boxes on images
+- Displays class labels and confidence scores
+- Saves annotated images for review
+
+Usage:
+```bash
+python src/model_training/4_visualise_yolo_obb.py
+```
+
+## 5. Dataset Splitting for YOLO
+Script: `src/model_training/5_data_splitting_yolo.py`
+
+This script splits the dataset into training, validation, and test sets for YOLO model training.
+
+Features:
+- Creates appropriate directory structure for YOLO training
+- Splits dataset with configurable ratios (default: 80% train, 10% validation, 10% test)
+- Ensures paired image and label files are kept together
+- Generates YAML configuration file for YOLO training
+
+Usage:
+```bash
+python src/model_training/5_data_splitting_yolo.py
+```
+
+Output:
+- Creates train, validation, and test directories with images and labels
+- Generates a YAML configuration file with dataset paths and class names
+
+This comprehensive pipeline ensures that the dataset is properly cleaned, annotated, and prepared for training a model to detect and read bulk flow meters.
 
 
