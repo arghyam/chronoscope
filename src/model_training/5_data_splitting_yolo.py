@@ -62,6 +62,7 @@ def create_yaml_file(output_dir, class_names):
 def split_dataset(src_dir, output_dir, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1):
     """Split dataset into train, validation, and test sets."""
     # Source directories
+    
     src_img_dir = os.path.join(src_dir, 'images')
     src_label_dir = os.path.join(src_dir, 'labels')
     
