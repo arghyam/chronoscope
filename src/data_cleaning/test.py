@@ -2,9 +2,7 @@
 # reader = easyocr.Reader(['en']) # this needs to run only once to load the model into memory
 # result = reader.readtext('data/Screenshot 2025-03-03 at 3.04.22 PM.png', detail=0)
 # print(result)
-
-
-from paddleocr import PaddleOCR, draw_ocr
+from paddleocr import PaddleOCR
 
 # Paddleocr supports Chinese, English, French, German, Korean and Japanese
 # You can set the parameter `lang` as `ch`, `en`, `french`, `german`, `korean`, `japan`

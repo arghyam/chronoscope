@@ -35,7 +35,7 @@ This function checks for orientation information within the EXIF metadata of an 
 |---|---|---|
 | `image_path` | `str` | The full path to the image file. |
 
-**Return Value:** 
+**Return Value:**
 * `True`: if the image's EXIF data indicates rotation.
 * `False`: if the image's EXIF data indicates no rotation (orientation tag value is 1).
 * `None`: if no EXIF data or orientation tag is found.

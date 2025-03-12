@@ -284,5 +284,3 @@ Output:
 - Generates a YAML configuration file with dataset paths and class names
 
 This comprehensive pipeline ensures that the dataset is properly cleaned, annotated, and prepared for training a model to detect and read bulk flow meters.
-
-

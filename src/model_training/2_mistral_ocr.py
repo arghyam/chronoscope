@@ -1,8 +1,10 @@
 import base64
-import os
 import logging
-from google.generativeai import configure, GenerativeModel
+import os
+
 from dotenv import load_dotenv
+from google.generativeai import configure
+from google.generativeai import GenerativeModel
 
 # Add these lines at the start after imports
 logging.basicConfig(level=logging.ERROR)
@@ -50,26 +52,26 @@ def process_image(image_path, api_key):
                 "max_output_tokens": 1024,
             }
         )
-        
+
         return response.text if response.text else "No numbers found."
-    
+
     except Exception as e:
         return f"Error processing image: {e}"
 
 def main():
     # Path to your image
     image_path = "output/straightened.jpg"
-    
+
     # Get API key from environment variables
     api_key = os.environ["GOOGLE_API_KEY"]
-    
+
     # Process the image
     result = process_image(image_path, api_key)
-    
+
     # Print results
     print("OCR Result:")
     print(result)
-    
+
     # Optionally save results to file
     with open("ocr_result.txt", "w", encoding="utf-8") as f:
         f.write(result)

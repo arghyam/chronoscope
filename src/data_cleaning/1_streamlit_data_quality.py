@@ -1,11 +1,9 @@
-import streamlit as st
-import os
-import pandas as pd
-import cv2
-import numpy as np
-import io
 import glob
-from PIL import Image
+import os
+
+import cv2
+import pandas as pd
+import streamlit as st
 
 def load_or_create_annotation_file(folder_path):
     # Try to load existing CSV file from the folder
@@ -20,7 +18,7 @@ def main():
 
     # Replace file_uploader with text input for folder path
     folder_path = st.sidebar.text_input("Enter the full path to your images folder:")
-    
+
     # Session state initialization
     if 'current_image_index' not in st.session_state:
         st.session_state.current_image_index = 0
@@ -41,7 +39,7 @@ def main():
         image_files = []
         for ext in image_extensions:
             image_files.extend(glob.glob(os.path.join(folder_path, ext)))
-        
+
         if image_files:
             # Update session state with image files and set current index to first unannotated image
             if st.session_state.image_files != image_files:
@@ -54,7 +52,7 @@ def main():
                         break
 
             current_file_path = st.session_state.image_files[st.session_state.current_image_index]
-            
+
             # Display image using cv2 without any orientation changes
             image = cv2.imread(current_file_path)
             # Convert BGR to RGB for proper display in streamlit
@@ -64,17 +62,17 @@ def main():
 
             # Create two rows of three columns for the annotation options
             annotation_options = ['Good', 'Blurry', 'Out of focus', 'Oriented', 'Foggy', 'Poor lighting']
-            
+
             # First row of options
             for i, col in enumerate(st.columns(3)):
-                if col.button(annotation_options[i], 
+                if col.button(annotation_options[i],
                             key=f"btn_{i}",
                             type="primary" if st.session_state.selected_annotation == annotation_options[i] else "secondary"):
                     st.session_state.selected_annotation = annotation_options[i]
-                    
+
             # Second row of options
             for i, col in enumerate(st.columns(3)):
-                if col.button(annotation_options[i+3], 
+                if col.button(annotation_options[i+3],
                             key=f"btn_{i+3}",
                             type="primary" if st.session_state.selected_annotation == annotation_options[i+3] else "secondary"):
                     st.session_state.selected_annotation = annotation_options[i+3]
@@ -83,7 +81,7 @@ def main():
             st.write("")
             st.write("")
             st.write("")
-            
+
             # Modify the save and next button section
             with st.container():
                 col1, col2, col3 = st.columns([1, 1, 1])
@@ -99,7 +97,7 @@ def main():
                                 'annotation': st.session_state.selected_annotation,
                                 'annotation_done': 'yes'
                             }
-                            
+
                             # Update DataFrame
                             if current_file_name in st.session_state.annotation_df['image_name'].values:
                                 st.session_state.annotation_df.loc[
@@ -114,7 +112,7 @@ def main():
                             # Automatically save CSV to the image folder
                             csv_path = os.path.join(folder_path, 'annotations.csv')
                             st.session_state.annotation_df.to_csv(csv_path, index=False)
-                            
+
                             # Move to next image
                             if st.session_state.current_image_index < len(st.session_state.image_files) - 1:
                                 st.session_state.current_image_index += 1
@@ -122,7 +120,7 @@ def main():
                                 st.rerun()
                             else:
                                 st.success("All images have been annotated!")
-                                
+
         else:
             st.error("No image files found in the specified folder!")
     elif folder_path:
