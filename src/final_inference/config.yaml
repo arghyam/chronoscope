@@ -13,6 +13,14 @@ image_enhancement:
   color_boost_alpha: 1.1
   color_boost_beta: 10
 
+# Dataset paths
+dataset:
+  golden_dataset:
+    images: "dataset/golden_dataset/images"
+    csv_files:
+      digit_sequences: "dataset/golden_dataset/csv_files/digit_sequences.csv"
+      evaluation_results: "dataset/golden_dataset/csv_files/model_evaluation_results.csv"
+
 # Test image paths
 test:
   sample_image: "dataset/data_cleaned/classification_data/Good/20240909121001_C2268402_F20918_M7711086.png"

@@ -2,6 +2,7 @@ import os
 
 import cv2
 import pandas as pd
+import yaml
 
 from src.final_inference.inference_utils import classify_bfm_image
 from src.final_inference.inference_utils import classify_color_image
@@ -11,11 +12,16 @@ from src.final_inference.inference_utils import load_bfm_classification
 from src.final_inference.inference_utils import load_color_classification_model
 from src.final_inference.inference_utils import load_individual_numbers_model
 
-def load_models():
+def load_config():
+    config_path = os.path.join('src', 'final_inference', 'config.yaml')
+    with open(config_path, 'r') as f:
+        return yaml.safe_load(f)
+
+def load_models(config):
     return {
-        'bfm_classification': load_bfm_classification(),
-        'individual_numbers': load_individual_numbers_model(),
-        'color_classification': load_color_classification_model()
+        'bfm_classification': load_bfm_classification(model_path=config['models']['bfm_classification']),
+        'individual_numbers': load_individual_numbers_model(model_path=config['models']['individual_numbers']),
+        'color_classification': load_color_classification_model(model_path=config['models']['color_classification'])
     }
 
 def compare_readings(true_sequence, recognized_reading):
@@ -91,12 +97,15 @@ def process_image(image_path, models):
         return "error", "error", "unknown"
 
 def evaluate_models():
+    # Load config
+    config = load_config()
+
     # Load models
     print("Loading models...")
-    models = load_models()
+    models = load_models(config)
 
-    # Read the golden dataset CSV
-    df = pd.read_csv('dataset/golden_dataset/csv_files/digit_sequences.csv')
+    # Read the golden dataset CSV using path from config
+    df = pd.read_csv(config['dataset']['golden_dataset']['csv_files']['digit_sequences'])
 
     # Create lists to store results
     results = []
@@ -104,13 +113,13 @@ def evaluate_models():
     print("Processing images...")
     # Process each image
     for idx, row in df.iterrows():
-        print(f"Processing image {idx} of {len(df)}")
+        print(f"Processing image {idx + 1} of {len(df)}")
         image_name = row['image_name']
         true_sequence = row['digit_sequence']
         true_color = row['has_decimal']
         is_missing = row['is_missing']
 
-        image_path = os.path.join('dataset/golden_dataset/images', image_name)
+        image_path = os.path.join(config['dataset']['golden_dataset']['images'], image_name)
 
         if os.path.exists(image_path):
             recognized_reading, quality, color = process_image(image_path, models)
@@ -129,9 +138,6 @@ def evaluate_models():
                 'comparison_result': comparison_result
             })
 
-            # if idx % 10 == 0:
-            #     print(f"Processed {idx} images...")
-
     # Create DataFrame and save results
     results_df = pd.DataFrame(results)
 
@@ -147,8 +153,8 @@ def evaluate_models():
     print(f"Wrong Readings: {wrong_count} ({(wrong_count/total_images)*100:.2f}%)")
     print(f"No Output: {no_output_count} ({(no_output_count/total_images)*100:.2f}%)")
 
-    # Save results
-    output_path = 'dataset/golden_dataset/csv_files/model_evaluation_results.csv'
+    # Save results using path from config
+    output_path = config['dataset']['golden_dataset']['csv_files']['evaluation_results']
     results_df.to_csv(output_path, index=False)
     print(f"\nResults saved to {output_path}")
 
