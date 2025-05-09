@@ -306,3 +306,326 @@ Yolo training data for individual number detection :
 
 Yolo training data for broad number detection :
 [AWS S3 Chronodata Bucket](https://ap-south-1.console.aws.amazon.com/s3/buckets/chronodata?region=ap-south-1&bucketType=general&prefix=dataset/training_data/yolo_broader_meter/&showversions=false)
+
+## Script 4: YOLO OBB Training (`train.py`)
+
+### Purpose
+Script to train a YOLO (You Only Look Once) model with OBB (Oriented Bounding Box) support using the Ultralytics framework. This training script is designed to train models that can detect objects with rotated bounding boxes, particularly useful for meter and digit detection at various orientations.
+
+### Configuration
+```yaml
+training:
+  # Model configuration
+  model:
+    base_model: 'yolov8m-obb.pt'
+    task: 'obb'
+    image_size: 640
+
+  # Training parameters
+  parameters:
+    epochs: 100
+    batch_size: 32
+
+  # Server training specific parameters (optional)
+  server_augmentations:
+    augment: false
+    fliplr: 0.0
+    flipud: 0.0
+    mosaic: 0.0
+    mixup: 0.0
+    scale: 0.0
+```
+
+### How It Works
+1. **Model Initialization (`YOLO`)**
+   - Loads pre-trained YOLO model (yolov8m-obb.pt)
+   - Configures model for OBB detection task
+   - Sets up training parameters
+
+2. **Training Process (`model.train`)**
+   - Executes training loop with specified parameters
+   - Handles data loading and batching
+   - Performs model optimization
+   - Tracks training metrics
+
+3. **Optional Operations**
+   - Saves training results for analysis
+   - Performs model validation
+   - Generates performance metrics
+
+### Usage
+```bash
+# Run training script
+python src/model_training/train.py
+```
+
+### Data Flow
+- **Input**:
+  - Pre-trained YOLO model (yolov8m-obb.pt)
+  - Dataset configuration (data.yaml)
+  - Training parameters
+- **Output**:
+  - Trained model weights
+  - Training metrics and results
+  - Optional validation metrics
+
+### Training Configurations
+
+1. **Basic Training Setup**
+   ```python
+   from ultralytics import YOLO
+
+   model = YOLO('yolov8m-obb.pt')
+   results = model.train(
+       task='obb',
+       data="path/to/data.yaml",
+       epochs=100,
+       imgsz=640,
+       batch=32
+   )
+   ```
+
+2. **Server Training Setup**
+   ```python
+   model = YOLO('yolov8m-obb.pt')
+   results = model.train(
+       task='obb',
+       data="/opt/dlami/nvme/chronoscope/yolo_broader_meter/data.yaml",
+       epochs=200,
+       imgsz=640,
+       batch=32,
+       augment=False,
+       fliplr=0.0,
+       flipud=0.0,
+       mosaic=0.0,
+       mixup=0.0,
+       scale=0.0
+   )
+   ```
+
+### Data Requirements
+- **Dataset Structure**:
+  ```
+  dataset_root/
+  ├── train/
+  │   ├── images/
+  │   └── labels/
+  ├── val/
+  │   ├── images/
+  │   └── labels/
+  ├── test/
+  │   ├── images/
+  │   └── labels/
+  └── data.yaml
+  ```
+
+- **Data YAML Format**:
+  ```yaml
+  train: train/images
+  val: val/images
+  test: test/images
+  nc: [number_of_classes]
+  names: [class_names]
+  ```
+
+### Training Data Sources
+The training data is stored in AWS S3 buckets:
+
+1. **Individual Number Detection Dataset**:
+   - Location: [AWS S3 Chronodata Bucket - Individual Numbers](https://ap-south-1.console.aws.amazon.com/s3/buckets/chronodata?region=ap-south-1&bucketType=general&prefix=dataset/training_data/yolo_indivisual/)
+
+2. **Broad Meter Detection Dataset**:
+   - Location: [AWS S3 Chronodata Bucket - Broader Meter](https://ap-south-1.console.aws.amazon.com/s3/buckets/chronodata?region=ap-south-1&bucketType=general&prefix=dataset/training_data/yolo_broader_meter/)
+
+### Notes
+- Supports both local and server-based training configurations
+- Server configuration includes options to disable various augmentations
+- Uses medium-sized YOLOv8 architecture (yolov8m-obb.pt)
+- Training parameters can be adjusted based on available computational resources
+- Includes optional validation and result saving functionality
+
+## Script 5: Classification Data Creation (`9_classiification_data_creation.py`)
+
+### Purpose
+Script to organize and prepare image data for classification tasks by creating a structured directory hierarchy based on class labels. This script processes annotated images and organizes them into class-specific folders, making the dataset ready for training classification models.
+
+### Configuration (`model_training_config.yaml`)
+```yaml
+image_classification:
+  data_paths:
+    source_dir: 'path/to/source/images'
+    destination_dir: 'path/to/classification/dataset'
+    annotations_file: 'path/to/annotations.csv'
+  classes:
+    - class_name_1
+    - class_name_2
+    # Add other classes as needed
+```
+
+### How It Works
+1. **Configuration Loading**
+   - Reads YAML configuration file
+   - Sets up source and destination paths
+   - Loads class definitions
+
+2. **Directory Structure Creation**
+   - Creates base destination directory
+   - Creates subdirectories for each class
+   - Handles spaces in class names by replacing with underscores
+
+3. **Data Organization**
+   - Reads annotations from CSV file
+   - Copies images to respective class folders
+   - Maintains class distribution statistics
+   - Handles missing files with warnings
+
+### Usage
+```bash
+# Run classification data organization script
+python src/model_training/9_classiification_data_creation.py
+```
+
+### Data Flow
+- **Input**:
+  - Source directory containing original images
+  - CSV file with annotations (format: image_name,class_label,...)
+  - Configuration file with paths and class definitions
+- **Output**:
+  - Organized dataset structure:
+    ```
+    destination_dir/
+    ├── class_1/
+    │   └── [images for class 1]
+    ├── class_2/
+    │   └── [images for class 2]
+    └── ...
+    ```
+  - Distribution statistics showing:
+    - Count of images per class
+    - Percentage distribution
+    - Total image count
+
+### File Formats
+1. **Input CSV Format**
+   ```text
+   image_name,annotation,additional_fields
+   image1.jpg,class_label_1,...
+   image2.jpg,class_label_2,...
+   ```
+
+2. **Output Directory Structure**
+   ```text
+   destination_dir/
+   ├── class_label_1/
+   │   └── [corresponding images]
+   ├── class_label_2/
+   │   └── [corresponding images]
+   └── ...
+   ```
+
+### Notes
+- Automatically creates class directories if they don't exist
+- Handles spaces in class names by converting to underscores
+- Provides detailed distribution statistics for dataset analysis
+- Reports warnings for missing source files
+- Preserves original image files through copying
+- Supports flexible CSV annotation format
+
+## Script 6: Digit Color Classification Data Creation (`10_digit_classification_data_creation.py`)
+
+### Purpose
+Script to process meter images and extract the last digit, organizing them into separate directories based on their color (red or black). This script uses pre-trained models to detect digits, extract the last digit, and save it to the appropriate color-based directory for further classification tasks.
+
+### Configuration (`model_training_config.yaml`)
+```yaml
+digit_color_classification:
+  data_paths:
+    annotations_file: 'dataset/last_digit_red_annotations.csv'
+    output_dirs:
+      red: 'dataset/data_cleaned/color_classification/red'
+      black: 'dataset/data_cleaned/color_classification/black'
+
+  models:
+    bfm_classification: True  # Flag to indicate BFM classification model usage
+    individual_numbers: True  # Flag to indicate individual numbers model usage
+
+  processing:
+    extract_last_digit: True  # Flag to indicate last digit extraction
+    save_cropped_images: True  # Flag to indicate if cropped images should be saved
+```
+
+### How It Works
+1. **Configuration Loading**
+   - Reads YAML configuration file
+   - Sets up paths for input annotations and output directories
+   - Configures model usage and processing flags
+
+2. **Image Processing Pipeline (`process_image`)**
+   - Loads and validates input image
+   - Performs BFM (Blurry/Foggy/Meter) classification
+   - Detects and extracts individual digits
+   - Isolates and saves the last digit
+   - Handles various error cases gracefully
+
+3. **Color-based Organization**
+   - Reads color annotations from CSV file
+   - Directs extracted digits to appropriate color directories
+   - Maintains processing statistics
+   - Reports success/failure counts
+
+### Usage
+```bash
+# Run digit color classification script
+python src/model_training/10_digit_classification_data_creation.py
+```
+
+### Data Flow
+- **Input**:
+  - CSV file containing:
+    - Image paths
+    - Color annotations (is_last_digit_red boolean)
+  - Source images
+  - Pre-trained models:
+    - BFM classification model
+    - Individual numbers detection model
+- **Output**:
+  - Organized dataset structure:
+    ```
+    data_cleaned/
+    └── color_classification/
+        ├── red/
+        │   └── [extracted red digit images]
+        └── black/
+            └── [extracted black digit images]
+    ```
+  - Processing statistics:
+    - Total images processed
+    - Successfully extracted digits
+    - Error counts and types
+
+### Processing Steps
+1. **Image Quality Check**
+   - Uses BFM model to classify image quality
+   - Only processes images classified as "good"
+   - Filters out poor quality images early
+
+2. **Digit Detection and Extraction**
+   - Detects all digits in the meter
+   - Identifies the last digit position
+   - Extracts the digit using bounding box coordinates
+   - Saves the cropped digit image
+
+3. **Color-based Classification**
+   - Determines digit color from annotations
+   - Routes extracted digits to appropriate directory
+   - Maintains original image names for traceability
+
+### Notes
+- Supports configurable model usage through YAML settings
+- Handles missing files and processing errors gracefully
+- Provides detailed processing statistics
+- Creates output directories automatically if they don't exist
+- Preserves original image names in extracted digits
+- Uses pre-trained models for robust digit detection
+- Integrates with existing BFM and digit recognition pipelines
+- Suitable for creating color-based digit classification datasets

@@ -2,6 +2,7 @@ import os
 
 import cv2
 import pandas as pd
+import yaml
 
 from src.inference.utils import classify_bfm_image
 from src.inference.utils import direct_recognize_meter_reading
@@ -9,22 +10,28 @@ from src.inference.utils import extract_digit_image
 from src.inference.utils import load_bfm_classification
 from src.inference.utils import load_individual_numbers_model
 
-# Path to the CSV file
-csv_path = "dataset/last_digit_red_annotations.csv"
+# Load configuration
+with open("src/model_training/model_training_config.yaml", 'r') as f:
+    config = yaml.safe_load(f)
 
-# Ensure output directory exists
-output_dir_red = "dataset/data_cleaned/color_classification/red"
-output_dir_black = "dataset/data_cleaned/color_classification/black"
+# Get configuration values
+digit_config = config['digit_color_classification']
+csv_path = digit_config['data_paths']['annotations_file']
+output_dir_red = digit_config['data_paths']['output_dirs']['red']
+output_dir_black = digit_config['data_paths']['output_dirs']['black']
+
+# Ensure output directories exist
 os.makedirs(output_dir_red, exist_ok=True)
 os.makedirs(output_dir_black, exist_ok=True)
 
 
-def process_image(image_path , output_dir):
+def process_image(image_path, output_dir):
     """
     Process a single image to detect and classify the last digit color
 
     Args:
         image_path: Path to the image file
+        output_dir: Directory to save the processed image
 
     Returns:
         Dictionary with classification results
@@ -36,9 +43,11 @@ def process_image(image_path , output_dir):
         if image is None:
             return {"error": f"Could not load image at {image_path}"}
 
-        # Load models (if not already loaded)
-        bfm_classification_model = load_bfm_classification()
-        individual_numbers_model = load_individual_numbers_model()
+        # Only load models if enabled in config
+        if digit_config['models']['bfm_classification']:
+            bfm_classification_model = load_bfm_classification()
+        if digit_config['models']['individual_numbers']:
+            individual_numbers_model = load_individual_numbers_model()
 
         # First, classify the image as good or bad
         classification_result = classify_bfm_image(image_path, model=bfm_classification_model)
@@ -50,23 +59,23 @@ def process_image(image_path , output_dir):
 
             # Check if we have at least one digit detected
             if sorted_boxes and len(sorted_boxes) >= 1:
-                # Extract the last digit image
-                last_box = sorted_boxes[-1]
-                last_digit_image = extract_digit_image(image, last_box)
+                # Extract the last digit image if configured
+                if digit_config['processing']['extract_last_digit']:
+                    last_box = sorted_boxes[-1]
+                    last_digit_image = extract_digit_image(image, last_box)
 
-                # Get the image filename without path
-                image_filename = os.path.basename(image_path)
+                    # Save the cropped image if configured
+                    if digit_config['processing']['save_cropped_images']:
+                        image_filename = os.path.basename(image_path)
+                        output_path = os.path.join(output_dir, image_filename)
+                        cv2.imwrite(output_path, last_digit_image)
 
-                # Save the cropped image to the specified folder
-                output_path = os.path.join(output_dir, image_filename)
-                cv2.imwrite(output_path, last_digit_image)
-
-                return {
-                    "status": "success",
-                    "meter_reading": meter_reading,
-                    "last_digit": sorted_classes[-1],
-                    "saved_to": output_path
-                }
+                    return {
+                        "status": "success",
+                        "meter_reading": meter_reading,
+                        "last_digit": sorted_classes[-1],
+                        "saved_to": output_path
+                    }
             else:
                 return {"status": "error", "message": "No digits detected in the image"}
         else:
@@ -84,7 +93,7 @@ if __name__ == "__main__":
     results = []
     for index, row in df.iterrows():
         image_path = row['image_name']  # Adjust column name if different
-        if row["is_last_digit_red"] == False :
+        if row["is_last_digit_red"] == False:
             output_dir = output_dir_black
         else:
             output_dir = output_dir_red

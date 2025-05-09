@@ -47,3 +47,34 @@ data_splitting:
     train: 0.8
     val: 0.1
     test: 0.1
+
+# Image Classification Configuration
+image_classification:
+  data_paths:
+    source_dir: 'dataset/data_cleaned/filtered_data/dataset2'
+    destination_dir: 'dataset/data_cleaned/classification_data'
+    annotations_file: 'dataset/data_cleaned/filtered_data/dataset2/annotations.csv'
+
+  classes:
+    - Good
+    - Blurry
+    - Foggy
+    - Poor lighting
+    - Out of focus
+    - Oriented
+
+# Digit Color Classification Configuration
+digit_color_classification:
+  data_paths:
+    annotations_file: 'dataset/last_digit_red_annotations.csv'
+    output_dirs:
+      red: 'dataset/data_cleaned/color_classification/red'
+      black: 'dataset/data_cleaned/color_classification/black'
+
+  models:
+    bfm_classification: True  # Flag to indicate BFM classification model usage
+    individual_numbers: True  # Flag to indicate individual numbers model usage
+
+  processing:
+    extract_last_digit: True  # Flag to indicate last digit extraction
+    save_cropped_images: True  # Flag to indicate if cropped images should be saved

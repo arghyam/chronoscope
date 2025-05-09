@@ -2,23 +2,32 @@ import os
 import shutil
 from collections import Counter
 
-# Source and destination directories
-src_dir = "dataset/data_cleaned/filtered_data/dataset2"
-dest_base_dir = "dataset/data_cleaned/classification_data"
+import yaml
+
+# Load configuration
+with open("src/model_training/model_training_config.yaml", "r") as config_file:
+    config = yaml.safe_load(config_file)
+
+# Get paths from config
+src_dir = config['image_classification']['data_paths']['source_dir']
+dest_base_dir = config['image_classification']['data_paths']['destination_dir']
+annotations_file = config['image_classification']['data_paths']['annotations_file']
+
+# Create destination directory
 os.makedirs(dest_base_dir, exist_ok=True)
 
 # Initialize counter for class distribution
 class_distribution = Counter()
 
 # Create the classification folders
-classes = ["Good", "Blurry", "Foggy", "Poor lighting", "Out of focus", "Oriented"]
+classes = config['image_classification']['classes']
 for class_name in classes:
     # Create folder with class name, replacing spaces with underscores
     class_folder = os.path.join(dest_base_dir, class_name.replace(" ", "_"))
     os.makedirs(class_folder, exist_ok=True)
 
 # Read the annotations file and copy images to respective folders
-with open("dataset/data_cleaned/filtered_data/dataset2/annotations.csv", "r") as f:
+with open(annotations_file, "r") as f:
     # Skip header
     next(f)
 
