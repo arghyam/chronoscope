@@ -1,0 +1,42 @@
+# Data cleaning configuration
+
+# Duplicate image removal settings
+duplicate_removal:
+  # Stage 1: Remove duplicates based on filenames
+  filename_based:
+    source_folders:
+      - "dataset/original_data/dataset1"
+    destination_folders:
+      - "dataset/data_cleaned/removing_duplicates/dataset4"
+    allowed_extensions:
+      - ".jpg"
+      - ".jpeg"
+      - ".png"
+
+  # Stage 2: Remove duplicates based on image content
+  content_based:
+    source_folders:
+      - "dataset/data_cleaned/removing_duplicates/dataset4"
+    destination_folders:
+      - "dataset/data_cleaned/dedup/dataset4"
+    allowed_extensions:
+      - ".jpg"
+      - ".jpeg"
+      - ".png"
+    hashing:
+      method: "phash"
+      available_methods:
+        - "phash"
+        - "dhash"
+        - "ahash"
+        - "md5"
+
+  # Stage 3: Remove similar images across datasets
+  cross_dataset_comparison:
+    reference_dataset: "dataset/data_cleaned/dedup/dataset1"
+    comparison_dataset: "dataset/data_cleaned/dedup/dataset4"
+    destination_folder: "dataset/filtered_data/dedup/dataset2"
+    allowed_extensions:
+      - ".jpg"
+      - ".jpeg"
+      - ".png"

@@ -16,6 +16,7 @@
 
 #data files
 data/
+dataset/
 models/
 output/
 
@@ -24,3 +25,14 @@ output/
 
 __pycache__/
 src/__pycache__/
+
+runs_broader_meter/
+runs_indi_500/
+runs_indi_full_10k/
+runs_indi_2f/
+runs_yolox/
+
+
+__pycache__/
+
+*.pem

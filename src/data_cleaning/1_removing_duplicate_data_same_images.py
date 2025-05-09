@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 
 import imagehash
+import yaml
 from PIL import Image
 from tqdm import tqdm
 
@@ -53,9 +54,16 @@ def remove_duplicate_images(input_folder, output_folder, hash_method='phash'):
     # Create output directory if it doesn't exist
     output_folder.mkdir(exist_ok=True, parents=True)
 
+    # Load config and get allowed extensions
+    with open('src/data_cleaning/data_cleaning_config.yaml', 'r') as f:
+        config = yaml.safe_load(f)
+    allowed_extensions = config['duplicate_removal']['content_based']['allowed_extensions']
+
     # Get all image files
-    image_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.gif', '.webp']
-    image_files = [f for f in input_folder.glob('**/*') if f.is_file() and f.suffix.lower() in image_extensions]
+    image_files = [
+        f for f in input_folder.glob('**/*')
+        if f.is_file() and f.suffix.lower() in allowed_extensions
+    ]
 
     print(f"Found {len(image_files)} images in {input_folder}")
 
@@ -91,19 +99,31 @@ def remove_duplicate_images(input_folder, output_folder, hash_method='phash'):
     return len(unique_images), len(duplicates)
 
 if __name__ == "__main__":
-    # Hardcoded paths as requested
-    input_folder = 'data/original_images_2'
-    output_folder = 'data/refined_data_2'
+    # Load configuration
+    with open('src/data_cleaning/data_cleaning_config.yaml', 'r') as f:
+        config = yaml.safe_load(f)
 
-    # Use perceptual hash (phash) as it's the most reliable for image similarity
-    hash_method = 'phash'
+    # Get content-based duplicate removal settings
+    content_config = config['duplicate_removal']['content_based']
 
-    unique_count, duplicate_count = remove_duplicate_images(
-        input_folder=input_folder,
-        output_folder=output_folder,
-        hash_method=hash_method
-    )
+    # Process each source-destination folder pair
+    for source_folder, dest_folder in zip(
+        content_config['source_folders'],
+        content_config['destination_folders']
+    ):
+        print(f"\nProcessing folder pair:")
+        print(f"Source: {source_folder}")
+        print(f"Destination: {dest_folder}")
 
-    print(f"Processed {unique_count + duplicate_count} total images")
-    print(f"Copied {unique_count} unique images to {output_folder}")
-    print(f"Skipped {duplicate_count} duplicate images")
+        # Get hash method from config, default to 'phash' if not specified
+        hash_method = content_config.get('hashing', {}).get('method', 'phash')
+
+        unique_count, duplicate_count = remove_duplicate_images(
+            input_folder=source_folder,
+            output_folder=dest_folder,
+            hash_method=hash_method
+        )
+
+        print(f"Processed {unique_count + duplicate_count} total images")
+        print(f"Copied {unique_count} unique images to {dest_folder}")
+        print(f"Skipped {duplicate_count} duplicate images")

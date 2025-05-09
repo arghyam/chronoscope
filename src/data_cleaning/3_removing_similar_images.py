@@ -2,6 +2,12 @@ import os
 import shutil
 from pathlib import Path
 
+import yaml
+
+def load_config():
+    with open('src/data_cleaning/data_cleaning_config.yaml', 'r') as file:
+        return yaml.safe_load(file)
+
 def copy_unique_images(dataset2_path, dataset3_path, fresh_path):
     # Create fresh directory if it doesn't exist
     Path(fresh_path).mkdir(parents=True, exist_ok=True)
@@ -23,10 +29,14 @@ def copy_unique_images(dataset2_path, dataset3_path, fresh_path):
     print(f"\nTotal unique images copied: {len(unique_images)}")
 
 if __name__ == "__main__":
-    # Define paths
-    dataset2_path = "data/cleaned_data/dedup/dataset2"
-    dataset3_path = "data/cleaned_data/dedup/dataset3"
-    fresh_path = "data/cleaned_data/dedup/fresh"
+    # Load configuration
+    config = load_config()
+    cross_dataset_config = config['duplicate_removal']['cross_dataset_comparison']
+
+    # Define paths from config
+    dataset2_path = cross_dataset_config['reference_dataset']
+    dataset3_path = cross_dataset_config['comparison_dataset']
+    fresh_path = cross_dataset_config['destination_folder']
 
     # Run the function
     copy_unique_images(dataset2_path, dataset3_path, fresh_path)

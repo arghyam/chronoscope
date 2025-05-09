@@ -2,7 +2,13 @@ import os
 import re
 import shutil
 
-def remove_duplicate_images(source_folder, destination_folder):
+import yaml
+
+def load_config():
+    with open('src/data_cleaning/data_cleaning_config.yaml', 'r') as file:
+        return yaml.safe_load(file)
+
+def remove_duplicate_images(source_folder, destination_folder, allowed_extensions):
     # Create destination folder if it doesn't exist
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
@@ -19,7 +25,7 @@ def remove_duplicate_images(source_folder, destination_folder):
 
     # Iterate through all files in source folder
     for filename in os.listdir(source_folder):
-        if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
+        if any(filename.lower().endswith(ext) for ext in allowed_extensions):
             match = re.match(pattern, filename, re.IGNORECASE)
             if match:
                 base_name = match.group(1)
@@ -41,8 +47,18 @@ def remove_duplicate_images(source_folder, destination_folder):
     print(f"Number of duplicates removed: {original_count - final_count}")
 
 if __name__ == "__main__":
-    # Define source and destination folders
-    source_folder = "data/original_images_2"  # Change this to your source folder path
-    destination_folder = "data/refined_data_2"  # This will create refined_data inside data folder
+    # Load configuration
+    config = load_config()
+    duplicate_config = config['duplicate_removal']
 
-    remove_duplicate_images(source_folder, destination_folder)
+    # Process each source-destination pair
+    for source_folder, destination_folder in zip(
+        duplicate_config['source_folders'],
+        duplicate_config['destination_folders']
+    ):
+        print(f"\nProcessing folder: {source_folder}")
+        remove_duplicate_images(
+            source_folder,
+            destination_folder,
+            duplicate_config['allowed_extensions']
+        )

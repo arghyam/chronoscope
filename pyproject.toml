@@ -18,7 +18,20 @@ imagehash = "^4.3.2"
 tqdm = "^4.67.1"
 boto3 = "^1.37.2"
 pytesseract = "^0.3.13"
+ultralytics = "^8.3.91"
+python-multipart = "^0.0.20"
+pydantic = "^2.11.2"
+uvicorn = "^0.34.0"
+fastapi = "^0.115.12"
+fastai = "^2.7.19"
+fastapi-limiter = "^0.1.6"
+redis = "^6.0.0"
+nest-asyncio = "^1.6.0"
+pyyaml = "^6.0.2"
 
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
 
 [build-system]
 requires = ["poetry-core"]

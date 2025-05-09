@@ -1,0 +1,49 @@
+# Data paths for conversion
+data_conversion:
+  xml_file: 'dataset/annotated_data/dataset4_2688/dataset4/annotations.xml'
+  source_dir: 'dataset/annotated_data/dataset4_2688/dataset4/images'
+  output_dir: 'dataset/training_data/broader_meter/dataset4_2688'
+
+# Label mapping configuration
+label_mapping:
+  meter: '0'
+  # Uncomment and modify if needed for digit detection
+  # '0': 0
+  # '1': 1
+  # '2': 2
+  # '3': 3
+  # '4': 4
+  # '5': 5
+  # '6': 6
+  # '7': 7
+  # '8': 8
+  # '9': 9
+
+# Visualization configuration
+visualization:
+  # Data paths for visualization
+  data_paths:
+    yolo_data_dir: 'dataset/training_data/indivisual_numbers/dataset1_1460'
+    output_dir: 'dataset/data_quality_check/indivisual_numbers/dataset1_1460'
+
+  # Visualization settings
+  settings:
+    figure_size: [12, 12]
+    bbox_linewidth: 2
+    font_size: 12
+
+  # Color scheme for different classes
+  colors:
+    meter: 'red'
+    digits: 'blue'  # Default color for all digit classes
+
+# Data splitting configuration
+data_splitting:
+  source:
+    base_dir: 'dataset/training_data/individual_numbers_2f'
+  output:
+    base_dir: 'dataset/training_data/yolo_individual_numbers_2f'
+  split_ratios:
+    train: 0.8
+    val: 0.1
+    test: 0.1

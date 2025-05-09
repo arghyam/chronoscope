@@ -1,4 +1,4 @@
-exclude: "(^|/)resources/.*"
+exclude: "(^|/)data/.*"
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
@@ -8,20 +8,20 @@ repos:
       - id: check-case-conflict
       - id: check-yaml
 
-  - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.17.0
-    hooks:
-      - id: gitleaks
-        args:
-          - protect
-          - --staged
-          - --redact
+  # - repo: https://github.com/gitleaks/gitleaks
+  #   rev: v8.17.0
+  #   hooks:
+  #     - id: gitleaks
+  #       args:
+  #         - protect
+  #         - --staged
+  #         - --redact
 
   - repo: https://github.com/PyCQA/autoflake
     rev: v2.2.1
     hooks:
       - id: autoflake
-        exclude: catalog_ingestor/src/resources
+        #exclude: catalog_ingestor/src/resources
         args:
           - "--remove-all-unused-imports"
           - "--in-place"

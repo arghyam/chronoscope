@@ -3,6 +3,12 @@ import os
 import cv2
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
+import yaml
+
+def load_config(config_path='src/model_training/model_training_config.yaml'):
+    """Load configuration from YAML file."""
+    with open(config_path, 'r') as f:
+        return yaml.safe_load(f)
 
 def load_class_names(classes_file):
     """Load class names from file."""
@@ -36,7 +42,14 @@ def load_yolo_obb_annotation(label_file, img_width, img_height):
 
     return annotations
 
-def visualize_yolo_obb(image_path, label_path, output_path, class_names):
+def get_color_for_class(class_id, class_name, config):
+    """Get color for visualization based on class."""
+    colors = config['visualization']['colors']
+    if class_name.lower().startswith('meter'):
+        return colors['meter']
+    return colors['digits']  # Default color for digit classes
+
+def visualize_yolo_obb(image_path, label_path, output_path, class_names, config):
     """Visualize YOLO OBB annotations on image and save to output path."""
     # Load image
     img = cv2.imread(image_path)
@@ -57,7 +70,8 @@ def visualize_yolo_obb(image_path, label_path, output_path, class_names):
     img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
     # Create figure and axis
-    fig, ax = plt.subplots(1, figsize=(12, 12))
+    fig_size = config['visualization']['settings']['figure_size']
+    fig, ax = plt.subplots(1, figsize=tuple(fig_size))
     ax.imshow(img_rgb)
 
     # Draw bounding boxes
@@ -65,14 +79,26 @@ def visualize_yolo_obb(image_path, label_path, output_path, class_names):
         class_id = ann['class_id']
         points = ann['points']
 
+        class_name = class_names[class_id] if class_id < len(class_names) else f"Class {class_id}"
+        color = get_color_for_class(class_id, class_name, config)
+
         # Create polygon patch
-        polygon = patches.Polygon(points, linewidth=2, edgecolor='r', facecolor='none')
+        polygon = patches.Polygon(
+            points,
+            linewidth=config['visualization']['settings']['bbox_linewidth'],
+            edgecolor=color,
+            facecolor='none'
+        )
         ax.add_patch(polygon)
 
         # Add class label
-        class_name = class_names[class_id] if class_id < len(class_names) else f"Class {class_id}"
-        ax.text(points[0][0], points[0][1] - 10, class_name,
-                bbox=dict(facecolor='red', alpha=0.5), fontsize=12, color='white')
+        ax.text(
+            points[0][0], points[0][1] - 10,
+            class_name,
+            bbox=dict(facecolor=color, alpha=0.5),
+            fontsize=config['visualization']['settings']['font_size'],
+            color='white'
+        )
 
     # Remove axis
     plt.axis('off')
@@ -85,14 +111,19 @@ def visualize_yolo_obb(image_path, label_path, output_path, class_names):
     print(f"Saved visualization to {output_path}")
 
 def main():
-    # Paths
-    yolo_data_dir = 'data/cleaned_data/yolo_data'
+    # Load configuration
+    config = load_config()
+
+    # Get paths from config
+    yolo_data_dir = config['visualization']['data_paths']['yolo_data_dir']
+    output_dir = config['visualization']['data_paths']['output_dir']
+
+    # Set up directories
     images_dir = os.path.join(yolo_data_dir, 'images')
     labels_dir = os.path.join(yolo_data_dir, 'labels')
     classes_file = os.path.join(yolo_data_dir, 'classes.txt')
 
-    # Output directory
-    output_dir = 'data/cleaned_data/yolo_check'
+    # Create output directory
     os.makedirs(output_dir, exist_ok=True)
 
     # Load class names
@@ -113,7 +144,7 @@ def main():
         label_path = os.path.join(labels_dir, label_file)
         output_path = os.path.join(output_dir, f"{os.path.splitext(img_file)[0]}_visualized.jpg")
 
-        visualize_yolo_obb(image_path, label_path, output_path, class_names)
+        visualize_yolo_obb(image_path, label_path, output_path, class_names, config)
 
     print(f"Visualization complete. Results saved to {output_dir}")
 

@@ -58,7 +58,8 @@ def main():
             # Convert BGR to RGB for proper display in streamlit
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             st.image(image)
-            st.write(f"Image {st.session_state.current_image_index + 1} of {len(st.session_state.image_files)}")
+            current_file_name = os.path.basename(current_file_path)
+            st.write(f"Image {st.session_state.current_image_index + 1} of {len(st.session_state.image_files)}: {current_file_name}")
 
             # Create two rows of three columns for the annotation options
             annotation_options = ['Good', 'Blurry', 'Out of focus', 'Oriented', 'Foggy', 'Poor lighting']

@@ -125,14 +125,21 @@ def split_dataset(src_dir, output_dir, train_ratio=0.8, val_ratio=0.1, test_rati
     print(f"Dataset splitting complete. Files saved to {output_dir}")
 
 def main():
-    # Paths
-    src_dir = 'data/cleaned_data/yolo_data'
-    output_dir = 'data/cleaned_data/yolo_final_data'
+    # Load configuration from YAML file
+    with open('src/model_training/model_training_config.yaml', 'r') as f:
+        config = yaml.safe_load(f)
 
-    # Split ratios
-    train_ratio = 0.8
-    val_ratio = 0.1
-    test_ratio = 0.1
+    # Get splitting configuration
+    split_config = config['data_splitting']
+
+    # Get paths from config
+    src_dir = split_config['source']['base_dir']
+    output_dir = split_config['output']['base_dir']
+
+    # Get split ratios from config
+    train_ratio = split_config['split_ratios']['train']
+    val_ratio = split_config['split_ratios']['val']
+    test_ratio = split_config['split_ratios']['test']
 
     # Split dataset
     split_dataset(src_dir, output_dir, train_ratio, val_ratio, test_ratio)
