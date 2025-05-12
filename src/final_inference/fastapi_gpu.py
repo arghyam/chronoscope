@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Optional
 
 import cv2
+import torch
 import uvicorn
 from fastapi import BackgroundTasks
 from fastapi import FastAPI
@@ -15,14 +16,17 @@ from fastapi import UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from src.final_inference.inference_utils import classify_bfm_image
-from src.final_inference.inference_utils import classify_color_image
-from src.final_inference.inference_utils import direct_recognize_meter_reading
-from src.final_inference.inference_utils import extract_digit_image
-from src.final_inference.inference_utils import load_bfm_classification
-from src.final_inference.inference_utils import load_color_classification_model
-from src.final_inference.inference_utils import load_individual_numbers_model
-# Import necessary functions from inference_utils
+from src.final_inference.inference_utilsgpu import classify_bfm_image
+from src.final_inference.inference_utilsgpu import classify_color_image
+from src.final_inference.inference_utilsgpu import direct_recognize_meter_reading
+from src.final_inference.inference_utilsgpu import extract_digit_image
+from src.final_inference.inference_utilsgpu import load_bfm_classification
+from src.final_inference.inference_utilsgpu import load_color_classification_model
+from src.final_inference.inference_utilsgpu import load_individual_numbers_model
+from src.final_inference.inference_utilsgpu import setup_gpu
+
+# Initialize GPU
+device = setup_gpu()
 
 app = FastAPI(
     title="Bulk Flow Meter Reading API",
@@ -53,6 +57,7 @@ class MeterReadingResponse(BaseModel):
     processing_time: float
     request_id: str
     timestamp: str
+    gpu_memory_used: Optional[float] = None
 
 class ErrorResponse(BaseModel):
     error: str
@@ -65,13 +70,25 @@ models = {
     'color_classification': None
 }
 
+# Add GPU memory management function
+def clear_gpu_memory():
+    """Clear GPU memory and run garbage collection"""
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        import gc
+        gc.collect()
+
 # Load models at startup
 @app.on_event("startup")
 async def load_models():
     global models
-    models['bfm_classification'] = load_bfm_classification()
-    models['individual_numbers'] = load_individual_numbers_model()
-    models['color_classification'] = load_color_classification_model()
+    try:
+        clear_gpu_memory()
+        models['bfm_classification'] = load_bfm_classification()
+        models['individual_numbers'] = load_individual_numbers_model()
+        models['color_classification'] = load_color_classification_model()
+    except Exception as e:
+        print(f"Error loading models: {str(e)}")
 
 def cleanup_temp_file(file_path: str):
     """Remove temporary file after processing"""
@@ -84,9 +101,16 @@ def cleanup_temp_file(file_path: str):
 @app.get("/")
 async def root():
     """Root endpoint with API info"""
+    gpu_info = {
+        "gpu_available": torch.cuda.is_available(),
+        "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
+        "gpu_memory": f"{torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f} GB" if torch.cuda.is_available() else None
+    }
+
     return {
         "name": "Bulk Flow Meter Reading API",
         "version": "1.1.0",
+        "gpu_info": gpu_info,
         "endpoints": [
             {"path": "/", "method": "GET", "description": "This information"},
             {"path": "/health", "method": "GET", "description": "API health check"},
@@ -98,9 +122,21 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
+    gpu_memory = None
+    if torch.cuda.is_available():
+        gpu_memory = {
+            "total": f"{torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f} GB",
+            "allocated": f"{torch.cuda.memory_allocated(0) / 1024**3:.2f} GB"
+        }
+
     return {
         "status": "healthy",
         "models_loaded": all(model is not None for model in models.values()),
+        "gpu_status": {
+            "available": torch.cuda.is_available(),
+            "device": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
+            "memory": gpu_memory
+        },
         "timestamp": datetime.now().isoformat()
     }
 
@@ -112,12 +148,10 @@ async def predict(
 ):
     """
     Process an uploaded image and return the detected meter reading with quality assessment
-
-    - **file**: Image file to process (jpg, jpeg, png)
-    - **save_debug**: Whether to save debug images (default: False)
     """
     request_id = str(uuid.uuid4())
     start_time = time.time()
+    initial_gpu_memory = torch.cuda.memory_allocated(0) if torch.cuda.is_available() else 0
 
     if not file.filename.lower().endswith(('.jpg', '.jpeg', '.png')):
         raise HTTPException(
@@ -126,6 +160,9 @@ async def predict(
         )
 
     try:
+        # Clear GPU memory before processing
+        clear_gpu_memory()
+
         # Create temporary file
         temp_file_path = os.path.join(TEMP_DIR, f"{request_id}_{file.filename}")
         content = await file.read()
@@ -157,7 +194,6 @@ async def predict(
                     model=models['color_classification']
                 )
 
-                # Format reading based on color
                 try:
                     original_length = len(meter_reading)
                     numeric_reading = float(meter_reading)
@@ -178,6 +214,12 @@ async def predict(
 
         processing_time = (time.time() - start_time) * 1000  # Convert to milliseconds
 
+        # Calculate GPU memory used
+        gpu_memory_used = None
+        if torch.cuda.is_available():
+            final_gpu_memory = torch.cuda.memory_allocated(0)
+            gpu_memory_used = (final_gpu_memory - initial_gpu_memory) / 1024**2  # Convert to MB
+
         return MeterReadingResponse(
             reading=formatted_reading,
             quality_status=quality_status,
@@ -186,7 +228,8 @@ async def predict(
             color_confidence=color_result['confidence'],
             processing_time=processing_time,
             request_id=request_id,
-            timestamp=datetime.now().strftime("%d/%m/%Y %I:%M %p")
+            timestamp=datetime.now().strftime("%d/%m/%Y %I:%M %p"),
+            gpu_memory_used=gpu_memory_used
         )
 
     except Exception as e:
@@ -195,10 +238,21 @@ async def predict(
             status_code=500,
             detail=f"Error processing image: {str(e)}"
         )
+    finally:
+        # Clear GPU memory after processing
+        clear_gpu_memory()
 
 @app.get("/model/info")
 async def model_info():
     """Get information about the models used for inference"""
+    gpu_info = None
+    if torch.cuda.is_available():
+        gpu_info = {
+            "device": torch.cuda.get_device_name(0),
+            "memory_allocated": f"{torch.cuda.memory_allocated(0) / 1024**3:.2f} GB",
+            "memory_total": f"{torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f} GB"
+        }
+
     return {
         "models": {
             "quality_classification": {
@@ -214,12 +268,13 @@ async def model_info():
                 "name": "Last Digit Color Classification Model",
                 "classes": ["red", "black"]
             }
-        }
+        },
+        "gpu_info": gpu_info
     }
 
 if __name__ == "__main__":
-    uvicorn.run("fastapi:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("fastapi_gpu:app", host="0.0.0.0", port=8000, reload=True)
 
 
 #to run
-# uvicorn src.final_inference.fastapi:app --host 0.0.0.0 --port 8000 --reload
+#uvicorn src.final_inference.fastapi_gpu:app --host 0.0.0.0 --port 8000 --reload
